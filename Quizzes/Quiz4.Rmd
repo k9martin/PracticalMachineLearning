@@ -1,0 +1,300 @@
+---
+title: "Quiz 4"
+author: "Francisco Martín"
+date: "October 22, 2018"
+output: html_document
+---
+
+## 1.-
+
+For this quiz we will be using several R packages. R package versions change over time, the right answers have been checked using the following versions of the packages.
+
+AppliedPredictiveModeling: v1.1.6
+
+caret: v6.0.47
+
+ElemStatLearn: v2012.04-0
+
+pgmm: v1.1
+
+rpart: v4.1.8
+
+gbm: v2.1
+
+lubridate: v1.3.3
+
+forecast: v5.6
+
+e1071: v1.6.4
+
+If you aren't using these versions of the packages, your answers may not exactly match the right answer, but hopefully should be close.
+
+
+Load the vowel.train and vowel.test data sets:
+
+```{r eval=FALSE}
+library(ElemStatLearn)
+data(vowel.train)
+data(vowel.test)
+```
+
+Set the variable y to be a factor variable in both the training and test set. Then set the seed to 33833. Fit (1) a random forest predictor relating the factor variable y to the remaining variables and (2) a boosted predictor using the "gbm" method. Fit these both with the train() command in the caret package.
+
+What are the accuracies for the two approaches on the test data set? What is the accuracy among the test set samples where the two methods agree?
+
+
+- RF Accuracy = 0.9987; GBM Accuracy = 0.5152; Agreement Accuracy = 0.9985
+
+- RF Accuracy = 0.6082; GBM Accuracy = 0.5152: Agreement Accuracy = 0.6361   (Correct)
+
+- RF Accuracy = 0.9881; GBM Accuracy = 0.8371; Agreement Accuracy = 0.9983
+
+- RF Accuracy = 0.6082; GBM Accuracy = 0.5152; Agreement Accuracy = 0.5152
+
+Solution ->
+
+```{r prove_1}
+library(ElemStatLearn)
+data(vowel.train)
+data(vowel.test)
+
+
+library(caret)
+set.seed(33833)
+
+vowel.train_factor<-cbind(as.factor(vowel.train$y), vowel.train[,-1])
+names(vowel.train_factor)<-names(vowel.train)
+vowel.test_factor<-cbind(as.factor(vowel.test$y), vowel.test[,-1])
+names(vowel.test_factor)<-names(vowel.test)
+
+modelrf <- train(y~., data=vowel.train_factor, method = "rf")
+modelgbm <- train(y~.,data=vowel.train_factor,method="gbm")
+
+predictrf <- predict(modelrf, vowel.test_factor)
+predictgbm <- predict(modelgbm, vowel.test_factor,verbose=FALSE)
+
+# From ppt it will be used this:
+#predictdf <- data.frame(predictrf,predictgbm,y=vowel.test_factor$y)
+#combinedmodel <- train(y~., method="gam",data=predictdf)
+#predictcombined <- predict(combinedmodel,predictdf)
+
+accuracyrf <- confusionMatrix(predictrf, vowel.test_factor$y)$overall['Accuracy']
+accuracygbm <- confusionMatrix(predictgbm, vowel.test_factor$y)$overall['Accuracy']
+predictboost <- confusionMatrix(predictrf,predictgbm)$overall['Accuracy']
+#accuracycombined <- confusionMatrix(predictcombined, vowel.test_factor$y)$overall['Accuracy']
+```
+
+I obtained solutions `r accuracyrf`, `r accuracygbm` and `r predictboost`. They are different because 
+of packages version. Choosing for proximity.
+
+
+## 2.- 
+
+Load the Alzheimer's data using the following commands
+
+```{r eval=FALSE}
+
+library(caret)
+library(gbm)
+set.seed(3433)
+library(AppliedPredictiveModeling)
+data(AlzheimerDisease)
+adData = data.frame(diagnosis,predictors)
+inTrain = createDataPartition(adData$diagnosis, p = 3/4)[[1]]
+training = adData[ inTrain,]
+testing = adData[-inTrain,]
+
+```
+
+Set the seed to 62433 and predict diagnosis with all the other variables using a random forest ("rf"), boosted trees ("gbm") and linear discriminant analysis ("lda") model. Stack the predictions together using random forests ("rf"). What is the resulting accuracy on the test set? Is it better or worse than each of the individual predictions?
+
+- Stacked Accuracy: 0.88 is better than all three other methods
+
+- Stacked Accuracy: 0.80 is better than random forests and lda and the same as boosting.
+
+- Stacked Accuracy: 0.93 is better than all three other methods
+
+- Stacked Accuracy: 0.76 is better than random forests and boosting, but not lda.
+
+
+Solution ->
+
+``` {r prove_2}
+
+library(caret)
+library(gbm)
+set.seed(3433)
+library(AppliedPredictiveModeling)
+data(AlzheimerDisease)
+adData = data.frame(diagnosis,predictors)
+inTrain = createDataPartition(adData$diagnosis, p = 3/4)[[1]]
+training = adData[ inTrain,]
+testing = adData[-inTrain,]
+
+set.seed(62433)
+
+modelrf <- train(diagnosis~., data=training, method = "rf")
+modelgbm <- train(diagnosis~., data=training, method = "gbm", verbose=FALSE)
+modellda <- train(diagnosis~., data=training, method = "lda")
+
+predictrf <- predict(modelrf,testing)
+predictgbm <- predict(modelgbm,testing)
+predictlda <- predict(modellda,testing)
+
+predictdf <- data.frame(predictrf,predictgbm,predictlda,diagnosis=testing$diagnosis)
+combinedmodels <- train(diagnosis~., data=predictdf, method="rf")
+predictcombined <- predict(combinedmodels,predictdf)
+
+rf<-confusionMatrix(predictrf,testing$diagnosis)$overall['Accuracy']
+gbm<-confusionMatrix(predictgbm,testing$diagnosis)$overall['Accuracy']
+lda<-confusionMatrix(predictlda,testing$diagnosis)$overall['Accuracy']
+combined<-confusionMatrix(predictcombined,testing$diagnosis)$overall['Accuracy']
+
+```
+
+I obtained solutions `r rf`, `r gbm`, `r lda` and `r combined` for accuracies. 
+They are different because of packages version. Choosing for similarity.
+
+
+## 3.-
+
+Load the concrete data with the commands:
+
+```{r eval=FALSE}
+
+set.seed(3523)
+library(AppliedPredictiveModeling)
+data(concrete)
+inTrain = createDataPartition(concrete$CompressiveStrength, p = 3/4)[[1]]
+training = concrete[ inTrain,]
+testing = concrete[-inTrain,]
+
+```
+
+Set the seed to 233 and fit a lasso model to predict Compressive Strength. Which variable is the last coefficient to be set to zero as the penalty increases? (Hint: it may be useful to look up ?plot.enet).
+
+- Age
+
+- Water
+
+- Cement   (Correct)
+
+- CoarseAggregate
+
+
+
+Solution ->
+
+```{r prove_3}
+
+set.seed(3523)
+library(AppliedPredictiveModeling)
+data(concrete)
+inTrain = createDataPartition(concrete$CompressiveStrength, p = 3/4)[[1]]
+training = concrete[ inTrain,]
+testing = concrete[-inTrain,]
+
+set.seed(233)
+library(elasticnet)
+
+modellasso <- train(CompressiveStrength ~ ., data = training, method = "lasso")
+
+```
+
+It is cement.
+
+## 4.-
+
+Load the data on the number of visitors to the instructors blog from here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/gaData.csv
+
+Using the commands:
+
+
+```{r eval=FALSE}
+
+library(lubridate) # For year() function below
+dat = read.csv("~/Desktop/gaData.csv")
+training = dat[year(dat$date) < 2012,]
+testing = dat[(year(dat$date)) > 2011,]
+tstrain = ts(training$visitsTumblr)
+
+```
+
+Fit a model using the bats() function in the forecast package to the training time series. Then forecast this model for the remaining time points. For how many of the testing points is the true value within the 95% prediction interval bounds?
+
+- 96%
+
+- 93%
+
+- 94%
+
+- 95%
+
+Solution ->
+
+``` {r prove_4}
+path <- file.path(getwd(),"quiz_4_question_4.csv")
+library(lubridate) # For year() function below
+dat = read.csv(path)
+training = dat[year(dat$date) < 2012,]
+testing = dat[(year(dat$date)) > 2011,]
+tstrain = ts(training$visitsTumblr)
+
+library(forecast)
+mod_ts <- bats(tstrain)
+fcast <- forecast(mod_ts, level = 95, h = dim(testing)[1])
+result <-sum(fcast$lower < testing$visitsTumblr & testing$visitsTumblr < fcast$upper) / dim(testing)[1]
+
+
+```
+Solution is `r round(result,2)`.
+
+## 5.- 
+
+Load the concrete data with the commands:
+
+```{r eval=FALSE}
+
+set.seed(3523)
+library(AppliedPredictiveModeling)
+data(concrete)
+inTrain = createDataPartition(concrete$CompressiveStrength, p = 3/4)[[1]]
+training = concrete[ inTrain,]
+testing = concrete[-inTrain,]
+
+```
+
+Set the seed to 325 and fit a support vector machine using the e1071 package to predict Compressive Strength using the default settings. Predict on the testing set. What is the RMSE?
+
+
+- 107.44
+
+- 6.93
+
+- 11543.39
+
+- 6.72     (Correct)
+
+
+
+Solution ->
+
+``` {r prove_5}
+
+set.seed(3523)
+library(AppliedPredictiveModeling)
+data(concrete)
+inTrain = createDataPartition(concrete$CompressiveStrength, p = 3/4)[[1]]
+training = concrete[ inTrain,]                                                                                                                                                             +
+testing = concrete[-inTrain,]
+
+set.seed(325)
+library(e1071)
+mod_svm <- svm(CompressiveStrength ~ ., data = training)
+pred_svm <- predict(mod_svm, testing)
+result <- accuracy(pred_svm, testing$CompressiveStrength)[2]
+
+```
+Solution is `r round(result,2)`

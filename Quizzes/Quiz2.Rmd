@@ -1,0 +1,275 @@
+---
+title: "Quiz 2"
+author: "Francisco Martín"
+date: "October 19, 2018"
+output: html_document
+---
+
+
+### 1.- 
+Load the Alzheimer's disease data using the commands:
+
+
+library(AppliedPredictiveModeling)
+
+data(AlzheimerDisease)
+
+
+Which of the following commands will create non-overlapping training and test sets with about 50% of the observations assigned to each?
+
+
+
+
+- adData = data.frame(diagnosis,predictors); 
+trainIndex = createDataPartition(diagnosis, p = 0.50); 
+training = adData[trainIndex,]; 
+testing = adData[-trainIndex,]
+
+
+- adData = data.frame(diagnosis,predictors); 
+train = createDataPartition(diagnosis, p = 0.50,list=FALSE); 
+test = createDataPartition(diagnosis, p = 0.50,list=FALSE)
+
+
+- adData = data.frame(diagnosis,predictors); 
+trainIndex = createDataPartition(diagnosis, p = 0.50,list=FALSE); 
+training = adData[trainIndex,]; 
+testing = adData[-trainIndex,]         (Correct)
+
+
+- adData = data.frame(predictors); 
+trainIndex = createDataPartition(diagnosis,p=0.5,list=FALSE); 
+training = adData[trainIndex,]; 
+testing = adData[-trainIndex,]
+
+
+
+Explication -> Just prove it.
+
+### 2.-
+Load the cement data using the commands 
+
+
+library(AppliedPredictiveModeling); data(concrete)
+
+library(caret); set.seed(1000) 
+
+inTrain = createDataPartition(mixtures$CompressiveStrength, p = 3/4)[[1]] 
+
+training = mixtures[ inTrain,] 
+
+testing = mixtures[-inTrain,] 
+
+
+Make a plot of the outcome (CompressiveStrength) versus the index of the samples. Color by each of the variables in the data set (you may find the cut2() function in the Hmisc package useful for turning continuous covariates into factors). What do you notice in these plots? 
+
+
+
+
+- There is a non-random pattern in the plot of the outcome versus index that does not appear to be perfectly explained by any predictor suggesting a variable may be missing.     (Correct)
+
+- There is a non-random pattern in the plot of the outcome versus index.
+
+- There is a non-random pattern in the plot of the outcome versus index that is perfectly explained by the FlyAsh variable.
+
+- There is a non-random pattern in the plot of the outcome versus index that is perfectly explained by the Age variable.
+
+
+Explication ->
+```{r prove_2}
+suppressWarnings(library(AppliedPredictiveModeling))
+data(concrete)
+suppressWarnings(library(caret))
+suppressWarnings(library(Hmisc))
+set.seed(1000)
+inTrain = createDataPartition(mixtures$CompressiveStrength, p = 3/4)[[1]]
+training = mixtures[ inTrain,]; testing = mixtures[-inTrain,]
+
+#substracting column CompressiveStrength
+names <- names(concrete[-which(names(concrete)=="CompressiveStrength")])
+featurePlot(x = training[, names], y = training$CompressiveStrength, plot = "pairs")
+
+# There is no visual relation between any variable and ComprensiveStrength, and we can see. We can stop now because we have the 
+# answer we were looking for (only option is there is a non-random pattern and blabla), but let's look if any variable have it:
+i <- 1:nrow(training)
+ggplot(data = training, aes(x = i, y = CompressiveStrength)) + geom_point() + theme_bw()
+
+# Looks like there are four sections on the data (it is hard to see it, but lately it will make sense):
+cutCS <- cut2(training$CompressiveStrength, g = 4)
+ggplot(data = training, aes(y = i, x = cutCS)) + geom_boxplot() + geom_jitter(col = "blue") + theme_bw()
+featurePlot(x = training[, names], y = cutCS, plot = "box")
+
+# Maybe age can explain something, but it is not in the options we have for test... Easy decision.
+```
+
+### 3.- 
+Load the cement data using the commands
+
+
+library(AppliedPredictiveModeling)
+
+data(concrete); library(caret); set.seed(1000)
+
+inTrain = createDataPartition(mixtures$CompressiveStrength, p = 3/4)[[1]] 
+
+training = mixtures[ inTrain,];testing = mixtures[-inTrain,]
+
+
+Make a histogram and confirm the SuperPlasticizer variable is skewed. Normally you might use the log transform to try to make the data more symmetric. Why would that be a poor choice for this variable?
+
+
+
+
+- There are a large number of values that are the same and even if you took the log(SuperPlasticizer + 1) they would still all be identical so the distribution would not be symmetric.      (Correct)
+
+- The log transform does not reduce the skewness of the non-zero values of SuperPlasticizer
+
+- The log transform is not a monotone transformation of the data.
+
+- The SuperPlasticizer data include negative values so the log transform can not be performed.
+
+
+
+
+Explication ->
+
+```{r prove_3}
+suppressWarnings(library(AppliedPredictiveModeling))
+data(concrete)
+suppressWarnings(library(caret))
+set.seed(1000)
+inTrain = createDataPartition(mixtures$CompressiveStrength, p = 3/4)[[1]]
+training = mixtures[ inTrain,]
+testing = mixtures[-inTrain,]
+
+# First of all, lets do the histogram:
+
+ggplot(data =training, aes(x=Superplasticizer)) + geom_histogram()
+
+# There are values which are 0, so we cannot do the log() transform. Lets prove with log(...+1)
+ggplot(data =training, aes(x=log(Superplasticizer+1))) + geom_histogram()
+
+# Values still look identical, so the answer is "There are a large number of values that are the same and even if you took the log(SuperPlasticizer + 1) they would still all be identical so the distribution would not be symmetric"
+```
+
+### 4.- 
+Load the Alzheimer's disease data using the commands
+
+
+library(caret)
+
+library(AppliedPredictiveModeling)
+
+set.seed(3433)
+
+data(AlzheimerDisease)
+
+adData = data.frame(diagnosis,predictors)
+
+inTrain = createDataPartition(adData$diagnosis, p = 3/4)[[1]]
+
+training = adData[ inTrain,]
+
+testing = adData[-inTrain,]
+
+
+Find all the predictor variables in the training set that begin with IL. Perform principal components on these variables with the preProcess() function from thecaret package. Calculate the number of principal components needed to capture 90% of the variance. How many are there?
+
+
+
+
+- 11
+- 8
+- 7
+- 9    (Correct)
+
+
+
+
+Explication ->
+
+```{r prove_4}
+suppressWarnings(library(caret))
+suppressWarnings(library(AppliedPredictiveModeling))
+set.seed(3433)
+data(AlzheimerDisease)
+adData = data.frame(diagnosis,predictors)
+inTrain = createDataPartition(adData$diagnosis, p = 3/4)[[1]]
+training = adData[ inTrain,]
+testing = adData[-inTrain,]
+
+# First look at variables that begin with IL with a regex. Then use preprocess with thresh = 0.9
+trainingIL <- training[,grep(pattern ="^IL", x = names(training))]
+procTrain <- preProcess(trainingIL, method = "pca", thresh = 0.9 )
+procTrain
+```
+
+### 5.- 
+Load the Alzheimer's disease data using the commands
+
+
+
+library(caret)
+
+library(AppliedPredictiveModeling)
+
+set.seed(3433)data(AlzheimerDisease)
+
+adData = data.frame(diagnosis,predictors)
+
+inTrain = createDataPartition(adData$diagnosis, p = 3/4)[[1]]
+
+training = adData[ inTrain,]
+
+testing = adData[-inTrain,]
+
+
+
+Create a training data set consisting of only the predictors with variable names beginning with IL and the diagnosis. Build two predictive models, one using the predictors as they are and one using PCA with principal components explaining 80% of the variance in the predictors. Use method="glm" in the train function. What is the accuracy of each method in the test set? Which is more accurate?
+
+
+
+
+- Non-PCA Accuracy: 0.72. PCA Accuracy: 0.71
+- Non-PCA Accuracy: 0.65. PCA Accuracy: 0.72   (Correct)
+- Non-PCA Accuracy: 0.91. PCA Accuracy: 0.93
+- Non-PCA Accuracy: 0.72. PCA Accuracy: 0.65
+
+
+Explication ->
+
+```{r prove_5}
+suppressWarnings(library(caret))
+suppressWarnings(library(AppliedPredictiveModeling))
+set.seed(3433)
+data(AlzheimerDisease)
+adData = data.frame(diagnosis,predictors)
+inTrain = createDataPartition(adData$diagnosis, p = 3/4)[[1]]
+training = adData[ inTrain,]
+testing = adData[-inTrain,]
+
+# First look at variables that begin with IL with a regex, and diagnosis.
+trainingIL <- training[,grep(pattern ="^IL|diagnosis", x = names(training))]
+testingIL <- testing[,grep(pattern ="^IL|diagnosis", x = names(testing))]
+
+# Train both models:
+
+model_NonPCA <- train(diagnosis~., data = trainingIL, method = "glm") 
+model2_PCA <- train(diagnosis~., data = trainingIL, method = "glm", preProcess = "pca", trControl=trainControl(preProcOptions=list(thresh=0.8)))
+
+# Predict both models:
+
+predict_NonPCA <- predict(model_NonPCA,newdata = testingIL)
+predict_PCA <- predict(model2_PCA,newdata = testingIL)
+
+# Now use confusionMatrix for see accuracy for both models:
+
+matrix_NonPCA <- confusionMatrix(predict_NonPCA, testingIL$diagnosis)
+matrix_PCA <- confusionMatrix(predict_PCA, testingIL$diagnosis)
+
+matrix_NonPCA
+matrix_PCA
+
+```
+
+And solutions are `r round(matrix_NonPCA$overall[1],2)` for Non-PCA and `r round(matrix_PCA$overall[1],2)` for PCA.
